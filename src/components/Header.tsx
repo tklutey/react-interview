@@ -11,5 +11,6 @@ export default function Header() {
             .get('/api/example')
             .then((res) => res.data)
     )
+
     return <StyledBox> {data ? data['message'] : 'No data found'} </StyledBox>
 }

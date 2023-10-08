@@ -19,6 +19,13 @@ const Console = ({ width, height }: Props) => {
                 setInputBuffer([])
                 prompt();
                 break;
+            case ('\u007F'):
+                console.log('bs')
+                if (inputBuffer.length > 0) {
+                    setInputBuffer((prev) => prev.slice(0, prev.length - 1))
+                    term.current?.write('\b \b');
+                }
+                break;
             default:
                 setInputBuffer((prev) => [...prev, input])
                 term.current?.write(input);

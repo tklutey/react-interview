@@ -1,26 +1,51 @@
-import React, { useEffect, useRef } from 'react';
-import {Terminal} from "xterm";
+import React, {useEffect, useRef, useState} from 'react';
+import {IDisposable, Terminal} from "xterm";
 import {FitAddon} from "xterm-addon-fit";
 import 'xterm/css/xterm.css';
 
-const CodeExecutionTerminal = ({ width, height, terminalText }: Props) => {
+const Console = ({ width, height }: Props) => {
+    const [inputBuffer, setInputBuffer] = useState<string[]>([]);
+    const disposable = useRef<IDisposable>();
     const term = useRef<Terminal>();
-    useEffect(() => {
-        term.current = new Terminal({ convertEol: true });
+
+    const prompt = () => {
+        term.current?.write('$ ')
+    }
+    const handleInput = (input: string) => {
+        switch(input) {
+            case ('\r'):
+                term.current?.writeln('')
+                term.current?.writeln('The command you sent was: ' + inputBuffer.join(''))
+                setInputBuffer([])
+                prompt();
+                break;
+            default:
+                setInputBuffer((prev) => [...prev, input])
+                term.current?.write(input);
+        }
+    }
+
+    const initializeXTerm = () => {
+        term.current = new Terminal({ convertEol: true, cursorBlink: true });
         const fitAddon = new FitAddon();
         term.current?.loadAddon(fitAddon);
         // @ts-ignore
         term.current.open(document.getElementById('terminal'));
         fitAddon.fit();
-    }, []);
+        prompt();
+    }
+
+    const attachXtermKeyHandler = () => {
+        disposable.current?.dispose();
+        disposable.current = term.current?.onData(handleInput)
+    }
 
     useEffect(() => {
-        if (term.current && terminalText !== undefined && terminalText !== null) {
-            term.current?.reset();
-            term.current?.write(terminalText);
-            term.current?.focus();
+        if (!term.current) {
+            initializeXTerm();
         }
-    }, [terminalText]);
+        attachXtermKeyHandler();
+    }, [inputBuffer]);
 
     return (
         <div
@@ -41,7 +66,6 @@ const CodeExecutionTerminal = ({ width, height, terminalText }: Props) => {
 type Props = {
     width?: string;
     height?: string;
-    terminalText?: string;
 };
 
-export default CodeExecutionTerminal;
+export default Console;
